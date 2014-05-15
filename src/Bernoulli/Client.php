@@ -3,29 +3,33 @@ namespace Bernoulli;
 
 use GuzzleHttp;
 
-class Bernoulli {
+class Client {
     const URL = "https://bernoulli.herokuapp.com/client/api/experiments/";
 
     static public function GetExperiments($experimentIds, $userId, $userData, $clientId)
     {
-        $clientId = self::GetClientId($clientId);
+        $clientId = static::GetClientId($clientId);
+
+        if (is_array($experimentIds)) {
+            $experimentIds = join(',', $experimentIds);
+        }
 
         $queryString = [
             'clientId' => $clientId,
-            'experimentIds' => join(',', $experimentIds),
+            'experimentIds' => $experimentIds,
             'userId' => $userId,
         ];
 
         if ($userData != null) {
-            $queryString = array_combine($queryString, $userData);
+            $queryString = array_merge($queryString, $userData);
         }
 
-        $httpClient = new GuzzleHttp\Client();
+        $httpClient = static::GetHttpClient();
         $response = $httpClient->get(self::URL, [
             'query' => $queryString,
         ]);
 
-        if ($response->getStatusCode() != 200) {
+        if ($response->getStatusCode() != "200") {
             throw new \Exception("Unable to get experiments");
         }
 
@@ -39,7 +43,7 @@ class Bernoulli {
 
     static public function GoalAttained($experimentId, $userId, $clientId)
     {
-        $clientId = self::GetClientId($clientId);
+        $clientId = static::GetClientId($clientId);
 
         $queryString = [
             'clientId' => $clientId,
@@ -47,7 +51,8 @@ class Bernoulli {
             'userId' => $userId,
         ];
 
-        $httpClient = new GuzzleHttp\Client();
+        $httpClient = static::GetHttpClient();
+
         $response = $httpClient->post(self::URL, [
             'query' => $queryString,
 
@@ -62,18 +67,22 @@ class Bernoulli {
             throw new \Exception($data['message']);
         }
 
-        return $data['success'];
+        return $data['value']['success'];
     }
 
     static private function GetClientId($clientId) {
-        if ($clientId == null || $clientId == "") {
+        if ($clientId == null) {
             $clientId = getenv("BERNOULLI_CLIENT_ID");
 
-            if ($clientId == null || $clientId == "" ){
-                throw new \Exception("Invalid $clientId");
+            if ($clientId == null){
+                throw new \InvalidArgumentException("Invalid clientId");
             }
         }
 
         return $clientId;
+    }
+
+    static public function GetHttpClient() {
+        return new GuzzleHttp\Client();
     }
 }
