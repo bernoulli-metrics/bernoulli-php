@@ -12,9 +12,7 @@ class BernoulliTest extends PHPUnit_Framework_TestCase {
      * @expectedException InvalidArgumentException
      */
     public function testNullClientId() {
-        $client = new Bernoulli\Client();
-
-        $client->GetExperiments(['signup'], 's59', null, null);
+        Bernoulli\Client::GetExperiments(['signup'], 's59', null, null);
     }
 
     public function testGetExperimentsHandlesError() {
